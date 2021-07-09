@@ -91,7 +91,7 @@ int DigitalTwin::createHonoCredentials (String pass)
     return response;
 }
 
-int DigitalTwin::createDittoPiggyback ()
+int DigitalTwin::createDittoPiggyback (String json)
 {
     HTTPClient http;
     String srv = dittoURL + "/devops/piggyback/connectivity";
@@ -99,7 +99,7 @@ int DigitalTwin::createDittoPiggyback ()
     http.addHeader("Content-Type", "application/json");
     http.setAuthorization("devops", "foobar");
 
-    String jsonParse = "{\"targetActorSelection\":\"/system/sharding/connection\",\"headers\":{\"aggregate\":false},\"piggybackCommand\":{\"type\":\"connectivity.commands:createConnection\",\"connection\":{\"id\":\"hono-connection-for-" + honoTenant + "\",\"connectionType\":\"amqp-10\",\"connectionStatus\":\"open\",\"uri\":\"amqp://consumer%40HONO:verysecret@c2e-dispatch-router-ext:15672\",\"failoverEnabled\":true,\"sources\":[{\"addresses\":[\"telemetry/" + honoTenant + "\",\"event/" + honoTenant + "\"],\"authorizationContext\":[\"pre-authenticated:hono-connection\"],\"enforcement\":{\"input\":\"{{header:device_id}}\",\"filters\":[\"{{entity:id}}\"]},\"headerMapping\":{\"hono-device-id\":\"{{header:device_id}}\",\"content-type\":\"{{header:content-type}}\"},\"replyTarget\":{\"enabled\":true,\"address\":\"{{header:reply-to}}\",\"headerMapping\":{\"to\":\"command/" + honoTenant + "/{{header:hono-device-id}}\",\"subject\":\"{{header:subject|fn:default(topic:action-subject)|fn:default(topic:criterion)}}-response\",\"correlation-id\":\"{{header:correlation-id}}\",\"content-type\":\"{{header:content-type|fn:default(\'application/vnd.eclipse.ditto+json\')}}\"},\"expectedResponseTypes\":[\"response\",\"error\"]},\"acknowledgementRequests\":{\"includes\":[],\"filter\":\"fn:filter(header:qos,\'ne\',\'0\')\"}},{\"addresses\":[\"command_response/" + honoTenant + "/replies\"],\"authorizationContext\":[\"pre-authenticated:hono-connection\"],\"headerMapping\":{\"content-type\":\"{{header:content-type}}\",\"correlation-id\":\"{{header:correlation-id}}\",\"status\":\"{{header:status}}\"},\"replyTarget\":{\"enabled\":false,\"expectedResponseTypes\":[\"response\",\"error\"]}}],\"targets\":[{\"address\":\"command/" + honoTenant + "\",\"authorizationContext\":[\"pre-authenticated:hono-connection\"],\"topics\":[\"_/_/things/live/commands\",\"_/_/things/live/messages\"],\"headerMapping\":{\"to\":\"command/" + honoTenant + "/{{thing:id}}\",\"subject\":\"{{header:subject|fn:default(topic:action-subject)}}\",\"content-type\":\"{{header:content-type|fn:default(\'application/vnd.eclipse.ditto+json\')}}\",\"correlation-id\":\"{{header:correlation-id}}\",\"reply-to\":\"{{fn:default(\'command_response/" + honoTenant + "/replies\')|fn:filter(header:response-required,\'ne\',\'false\')}}\"}},{\"address\":\"command/" + honoTenant + "\",\"authorizationContext\":[\"pre-authenticated:hono-connection\"],\"topics\":[\"_/_/things/twin/events\",\"_/_/things/live/events\"],\"headerMapping\":{\"to\":\"command/" + honoTenant + "/{{thing:id}}\",\"subject\":\"{{header:subject|fn:default(topic:action-subject)}}\",\"content-type\":\"{{header:content-type|fn:default(\'application/vnd.eclipse.ditto+json\')}}\",\"correlation-id\":\"{{header:correlation-id}}\"}}]}}}";
+    String jsonParse = json;
 
     int response = http.POST(jsonParse);
     Serial.println();
@@ -179,5 +179,43 @@ int DigitalTwin::createDittoFeatures (String json)
     return response;
 }
 
+int DigitalTwin::createNodeRedDashboard (String json)
+{
+    HTTPClient http;
+    String srv = "http://jreichwald.de:1880/auth/token";
+    http.begin(*_client,srv);
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    int response = http.POST("client_id=node-red-admin&grant_type=password&scope=*&username=admin&password=admin1234");
+
+    Serial.println();
+    Serial.println("###   Ditto Features Provision   ###################################");
+    Serial.println("POST to Server: "+srv);  
+    Serial.print("HTTP Response code: ");
+    Serial.println(response);
+
+    nodeRedToken = (http.getString()).substring(17,189);
+
+    http.end();
+
+    HTTPClient http2;
+    srv = "http://jreichwald.de:1880/flow";
+    http2.begin(*_client,srv);
+    http2.addHeader("Authorization", "Bearer " + nodeRedToken);
+    http2.addHeader("Content-Type", "application/json");
+
+    response = http2.POST(json);
+    Serial.println();
+    Serial.println("###   NodeRed Dashboard Provision   ###################################");
+    Serial.println("POST to Server: "+srv);  
+    Serial.print("HTTP Response code: ");
+    Serial.println(response);
+
+    http2.end();
+    
+    delay(ms);
+    return response;
+    
+}
 
 

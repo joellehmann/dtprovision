@@ -27,6 +27,7 @@ class DigitalTwin
     String honoDevice;
     String honoNamespace;
     String honoDevicePassword;
+    String nodeRedToken;
 
     public: 
 
@@ -35,10 +36,11 @@ class DigitalTwin
     int createHonoTenant (String tenant);
     int createHonoDevice (String ns, String device);
     int createHonoCredentials (String pass);
-    int createDittoPiggyback ();
+    int createDittoPiggyback (String json);
     int createDittoPolicy (String json);
     int createDittoThing (String json);
     int createDittoFeatures (String json);
+    int createNodeRedDashboard (String json);
 };
 
 #endif
